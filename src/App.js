@@ -1,4 +1,6 @@
-import { useState } from "react";
+import React, {str} from "react";
+import { useState, useRef, useEffect } from "react";
+
 
 function Square({ value, onSquareClick }) {
   return (
@@ -8,12 +10,32 @@ function Square({ value, onSquareClick }) {
   );
 }
 
+function sendPlay(val, player){
+    console.log('sending... val: ' + val + ',jugador: ' + player);
+    fetch ("http://localhost:8080/jugada?val=" + val + "&jugador=" + player)
+            .then(res => res.json())
+            .then(
+            (result) => {
+                console.log('server returns: timestamp=' 
+                + result.timestamp
+                + ', rcvdmsg='
+                +result.rcvdmsg);
+            },
+            (error) => {
+                console.log('Error connecting to communicate movement.');
+            });
+}
+
+
+
 function Board({ xIsNext, squares, onPlay }) {
   function handleClick(i) {
     if (squares[i] || calculateWinner(squares)) {
       return;
     }
-
+    
+    sendPlay(i, xIsNext ? "X" : "O");
+    
     const nextSquares = squares.slice();
 
     if (xIsNext) {
@@ -33,7 +55,7 @@ function Board({ xIsNext, squares, onPlay }) {
   }
 
   return (
-    <>
+    <div>
       <div className="status"> {status}</div>
       <div className="board-row">
         <Square value={squares[0]} onSquareClick={() => handleClick(0)} />
@@ -50,7 +72,7 @@ function Board({ xIsNext, squares, onPlay }) {
         <Square value={squares[7]} onSquareClick={() => handleClick(7)} />
         <Square value={squares[8]} onSquareClick={() => handleClick(8)} />
       </div>
-    </>
+    </div>
   );
 }
 
@@ -60,6 +82,28 @@ export default function Game() {
   const xIsNext = currentMove % 2 === 0;
   const currentSquares = history[currentMove];
 
+
+  const [svrStatus, setSvrStatus] = useState('Starting Connection....');
+  const intervalRef = useRef(null);
+  useEffect(() =>{
+      intervalRef.current = setInterval(
+              () => {checkStatus(svrStatus);}, 5000);
+      return () => clearInterval(intervalRef.current)
+  }, []);
+  
+  function checkStatus(currentStatus){
+      console.log('checking...' + svrStatus + '. With intervalRef.current: ' + intervalRef.current);
+      fetch("http://localhost:8080/status")
+              .then(res => res.json())
+              .then(
+              (result) => {
+                  setSvrStatus(result.status);
+              },
+              (error) => {
+                  setSvrStatus('error');
+              });
+  }
+  
   function handlePlay(nextSquares) {
     const nextHistory = [...history.slice(0, currentMove + 1), nextSquares];
     setHistory(nextHistory);
@@ -91,6 +135,9 @@ export default function Game() {
       </div>
       <div className="game-info">
         <ol> {moves}</ol>
+      </div>
+      <div>
+        {svrStatus}
       </div>
     </div>
   );
