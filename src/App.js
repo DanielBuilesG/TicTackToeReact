@@ -1,10 +1,10 @@
-import React, {str} from "react";
+import React from "react";
 import { useState, useRef, useEffect } from "react";
 
 
-function Square({ value, onSquareClick }) {
+function Square({ value, onSquareClick, id }) {
   return (
-    <button className="square" onClick={onSquareClick}>
+    <button className="square" onClick={onSquareClick} id={"boton" + id}>
       {value}
     </button>
   );
@@ -26,9 +26,25 @@ function sendPlay(val, player){
             });
 }
 
-
+function updatePlay(){
+      console.log('Contacting server for updates... ');
+      fetch("http://localhost:8080/getjugada")
+              .then(res => res.json())
+              .then(
+              (result) => {
+                  if (result.val && result.val !== '-1'){
+                      console.log('Simulating Click on boton' + result.val);
+                      document.getElementById('boton' + result.val).click();
+                  }
+              },
+              (error) => {
+                  console.log('error connecting to getplays.');
+              });
+  }
 
 function Board({ xIsNext, squares, onPlay }) {
+    
+ 
   function handleClick(i) {
     if (squares[i] || calculateWinner(squares)) {
       return;
@@ -58,19 +74,19 @@ function Board({ xIsNext, squares, onPlay }) {
     <div>
       <div className="status"> {status}</div>
       <div className="board-row">
-        <Square value={squares[0]} onSquareClick={() => handleClick(0)} />
-        <Square value={squares[1]} onSquareClick={() => handleClick(1)} />
-        <Square value={squares[2]} onSquareClick={() => handleClick(2)} />
+        <Square value={squares[0]} onSquareClick={() => handleClick(0)} id='0' />
+        <Square value={squares[1]} onSquareClick={() => handleClick(1)} id='1'/>
+        <Square value={squares[2]} onSquareClick={() => handleClick(2)} id='2'/>
       </div>
       <div className="board-row">
-        <Square value={squares[3]} onSquareClick={() => handleClick(3)} />
-        <Square value={squares[4]} onSquareClick={() => handleClick(4)} />
-        <Square value={squares[5]} onSquareClick={() => handleClick(5)} />
+        <Square value={squares[3]} onSquareClick={() => handleClick(3)} id='3'/>
+        <Square value={squares[4]} onSquareClick={() => handleClick(4)} id='4'/>
+        <Square value={squares[5]} onSquareClick={() => handleClick(5)} id='5'/>
       </div>
       <div className="board-row">
-        <Square value={squares[6]} onSquareClick={() => handleClick(6)} />
-        <Square value={squares[7]} onSquareClick={() => handleClick(7)} />
-        <Square value={squares[8]} onSquareClick={() => handleClick(8)} />
+        <Square value={squares[6]} onSquareClick={() => handleClick(6)} id='6'/>
+        <Square value={squares[7]} onSquareClick={() => handleClick(7)} id='7'/>
+        <Square value={squares[8]} onSquareClick={() => handleClick(8)} id='8'/>
       </div>
     </div>
   );
@@ -84,12 +100,30 @@ export default function Game() {
 
 
   const [svrStatus, setSvrStatus] = useState('Starting Connection....');
+   
+  
   const intervalRef = useRef(null);
+  
+  
+  const timedPlaysMonitorRef = useRef(null);
+  
+  
   useEffect(() =>{
-      intervalRef.current = setInterval(
-              () => {checkStatus(svrStatus);}, 5000);
-      return () => clearInterval(intervalRef.current)
+        timedPlaysMonitorRef.current = setInterval(
+        () => {updatePlay();}, 10000);
+        return () => clearInterval(timedPlaysMonitorRef.current)
   }, []);
+  
+  
+  useEffect(() =>{
+        intervalRef.current = setInterval(
+        () => {checkStatus(svrStatus);}, 20000);
+        return () => clearInterval(intervalRef.current)
+  }, []);
+  
+  
+  
+  
   
   function checkStatus(currentStatus){
       console.log('checking...' + svrStatus + '. With intervalRef.current: ' + intervalRef.current);
